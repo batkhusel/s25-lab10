@@ -8,6 +8,7 @@ interface QuizState {
   selectedAnswer: string | null
   score: number
   showAnswer: boolean
+  isStarted: boolean
 }
 
 const Quiz: React.FC = () => {
@@ -22,6 +23,11 @@ const Quiz: React.FC = () => {
       options: ['Earth', 'Mars', 'Jupiter', 'Saturn'],
       correctAnswer: 'Mars',
     },
+    {
+      question: 'What is 5 + 7?',
+      options: ['10', '11', '12', '13'],
+      correctAnswer: '12',
+    },
   ];
 
   const [state, setState] = useState<QuizState>({
@@ -30,19 +36,27 @@ const Quiz: React.FC = () => {
     selectedAnswer: null,
     score: 0,
     showAnswer: false,
+    isStarted: false,
   });
 
+  const handleStart = () => {
+    setState((prev) => ({
+      ...prev,
+      isStarted: true,
+    }));
+  };
+
   const handleOptionSelect = (option: string): void => {
-    if (state.showAnswer) return; // Prevent re-selection after answer is shown
+    if (state.showAnswer) return;
+
+    const currentQ = state.questions[state.currentQuestionIndex];
+    const isCorrect = option === currentQ.correctAnswer;
 
     setState((prevState) => ({
       ...prevState,
       selectedAnswer: option,
       showAnswer: true,
-      score:
-        option === prevState.questions[prevState.currentQuestionIndex].correctAnswer
-          ? prevState.score + 1
-          : prevState.score,
+      score: isCorrect ? prevState.score + 1 : prevState.score,
     }));
   };
 
@@ -64,20 +78,48 @@ const Quiz: React.FC = () => {
     }
   };
 
-  const { questions, currentQuestionIndex, selectedAnswer, score, showAnswer } = state;
+  const handleRestart = (): void => {
+    setState({
+      questions: initialQuestions,
+      currentQuestionIndex: 0,
+      selectedAnswer: null,
+      score: 0,
+      showAnswer: false,
+      isStarted: false,
+    });
+  };
+
+  const { questions, currentQuestionIndex, selectedAnswer, score, showAnswer, isStarted } = state;
   const currentQuestion = questions[currentQuestionIndex];
 
-  if (!currentQuestion) {
+  // Start screen
+  if (!isStarted) {
     return (
       <div>
-        <h2>Quiz Completed</h2>
-        <p>Final Score: {score} out of {questions.length}</p>
+        <h2>🧠 Welcome to the Quiz!</h2>
+        <p>Test your knowledge with a few quick questions.</p>
+        <button onClick={handleStart}>Start Quiz</button>
       </div>
     );
   }
 
+  // End screen
+  if (!currentQuestion) {
+    return (
+      <div>
+        <h2>🎉 Quiz Completed!</h2>
+        <p className="final-score">Final Score: {score} / {questions.length}</p>
+        <button onClick={handleRestart}>Restart Quiz</button>
+      </div>
+    );
+  }
+
+  // Quiz screen
   return (
     <div>
+      <p className="progress">
+        Question {currentQuestionIndex + 1} of {questions.length}
+      </p>
       <h2>Quiz Question:</h2>
       <p>{currentQuestion.question}</p>
 
